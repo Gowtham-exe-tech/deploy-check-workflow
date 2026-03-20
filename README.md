@@ -4,14 +4,6 @@
 
 **A full-stack workflow automation system with dynamic rule-based execution**
 
-Built for the Halleyx Full Stack Engineer Challenge 2026
-
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev)
-[![SQLite](https://img.shields.io/badge/SQLite-ready-003B57?style=flat&logo=sqlite&logoColor=white)](https://sqlite.org)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-ready-4169E1?style=flat&logo=postgresql&logoColor=white)](https://postgresql.org)
-
 </div>
 
 ---
@@ -28,7 +20,15 @@ Think of it as a lightweight version of tools like Zapier or ServiceNow — but 
 
 ## Live Demo
 
-> Demo video attached in the [Releases](../../releases) section.
+| Service | URL |
+|---------|-----|
+| 🌐 Frontend | [https://deploy-check-workflow.vercel.app](https://deploy-check-workflow.vercel.app) |
+| ⚙ Backend API | [https://halx-workflow-engine.onrender.com](https://halx-workflow-engine.onrender.com) |
+| 📋 API Docs | [https://halx-workflow-engine.onrender.com/docs](https://halx-workflow-engine.onrender.com/docs) |
+
+>**Note:** Backend is hosted on Render free tier. If the app takes 30–60 seconds to load on first visit, please wait — the server is waking up. It works normally after that.
+
+>Original local host version in repo:[https://github.com/Gowtham-exe-tech/Halleyx-workflow-engine](https://github.com/Gowtham-exe-tech/Halleyx-workflow-engine)
 
 ---
 
@@ -142,8 +142,6 @@ halleyx-workflow-engine/
 | Python | 3.10+ | `python --version` |
 | Node.js | 18+ | `node --version` |
 | npm | 9+ | `npm --version` |
-
-Download: [python.org](https://python.org/downloads) · [nodejs.org](https://nodejs.org)
 
 ---
 
@@ -427,80 +425,19 @@ Expected output:
 ════════════════════════════════════════════════════════
   Results: 75 passed, 0 failed
 ════════════════════════════════════════════════════════
+
+--> 2 test cases may failed(i.e)DELETE as foreign key restrict in actual db
+
 ```
 
-**Test coverage:**
-- Health check
-- Workflow CRUD (create, read, update, delete, search, pagination)
-- Step CRUD with type validation
-- Rule CRUD with priority ordering
-- Rule engine — all operators, functions, DEFAULT, missing fields, syntax errors
-- Execution flow — full traversal, approval pause/resume
-- Input validation — required fields, type checks, allowed values
-- Cancel and retry
-- Audit log filtering
-- Cleanup
-
-> **Note:** Update `BASE = "http://localhost:8001"` on line 1 of `test_all.py` if your backend runs on a different port.
-
----
-
-## Sample Workflows
-
-Two workflows are pre-loaded by `seed.py`.
-
-### 1 — Expense Approval
-
-Multi-level financial approval based on amount, country, and priority.
-
-**Input fields:** `amount` (number, required) · `country` (string, required) · `priority` (High/Medium/Low, required) · `department` (string, optional)
-
-**Steps:** Manager Approval → Finance Notification → CEO Approval → Task Rejection
-
-**Routing rules on Manager Approval:**
-
-| Priority | Condition | Routes To |
-|----------|-----------|-----------|
-| 1 | `amount > 100 and country == 'US' and priority == 'High'` | Finance Notification |
-| 2 | `amount <= 100 or department == 'HR'` | CEO Approval |
-| 3 | `priority == 'Low' and country != 'US'` | Task Rejection |
-| 4 | `DEFAULT` | Task Rejection |
-
-**Sample executions:**
-
-| Input | Route |
-|-------|-------|
-| amount=250, country=US, priority=High | Manager Approval → Finance Notification → end |
-| amount=30, country=US, priority=High | Manager Approval → CEO Approval → end |
-| amount=250, country=IN, priority=Low | Manager Approval → Task Rejection → end |
-
----
-
-### 2 — Employee Onboarding
-
-Linear onboarding flow with an HR approval gate.
-
-**Input fields:** `employee_name` (string, required) · `department` (string, required) · `role` (string, required)
-
-**Steps:** HR Review → IT Setup → Welcome Notification
-
-**Sample execution:**
-
-```json
-{
-  "employee_name": "Alice Johnson",
-  "department": "Engineering",
-  "role": "Senior Developer"
-}
-```
-
-Route: HR Review (approve) → IT Setup → Welcome Notification → end
-
----
 
 ## Bugs Found and Fixed
 
 The following bugs were discovered during manual QA testing after initial development and were resolved before submission.
+
+Tester: Gowtham G
+Report on :18-03-2026 04.30 am
+
 
 | ID | Severity | Title | Fix |
 |----|----------|-------|-----|
@@ -550,39 +487,56 @@ Restart the backend — SQLAlchemy creates all tables automatically on startup. 
 
 ---
 
-## Design Decisions
+## Sample Workflows
 
-**Rule engine is a pure function**
-`evaluate_rules(rules, input_data)` has zero database imports. This means it can be unit tested without any database setup, called from `/simulate` without touching executions, and runs with no I/O overhead inside the evaluation loop.
+Two workflows are pre-loaded by `seed.py`.
 
-**SQLAlchemy for database abstraction**
-One `DATABASE_URL` string controls everything. SQLite for local development (zero config, single file), PostgreSQL for production. Same models, same queries, same services.
+### 1 — Expense Approval
 
-**Approval steps pause and wait**
-When the execution engine reaches an approval step, it writes the step log, advances `current_step_id`, sets status to `pending`, and returns. The workflow resumes when `POST /executions/:id/approve` is called. A human decision never blocks the server thread.
+Multi-level financial approval based on amount, country, and priority.
 
-**Versioning is non-destructive**
-`PUT /workflows/:id` increments the `version` field in place. Every execution records the `workflow_version` it ran on. Historical logs are always accurate even after a workflow is later modified.
+**Input fields:** `amount` (number, required) · `country` (string, required) · `priority` (High/Medium/Low, required) · `department` (string, optional)
 
-**Retry is step-level not workflow-level**
-`POST /executions/:id/retry` re-runs only from the failed step. All previously completed steps remain in the log. This preserves the execution history and avoids re-running steps that already succeeded.
+**Steps:** Manager Approval → Finance Notification → CEO Approval → Task Rejection
 
-**`current_step_id` always points to the failed step**
-When an execution fails, `current_step_id` is explicitly set to the step that caused the failure — not the next step the engine was trying to advance to. This ensures the "Fix Rules on Failed Step" button always navigates to the correct step.
+**Routing rules on Manager Approval:**
 
----
+| Priority | Condition | Routes To |
+|----------|-----------|-----------|
+| 1 | `amount > 100 and country == 'US' and priority == 'High'` | Finance Notification |
+| 2 | `amount <= 100 or department == 'HR'` | CEO Approval |
+| 3 | `priority == 'Low' and country != 'US'` | Task Rejection |
+| 4 | `DEFAULT` | Task Rejection |
 
-## UI Design
+**Sample executions:**
 
-- **Dark mode** (default) — deep forest green backgrounds with bright green accent (`#34d27a`)
-- **Light mode** — clean off-white with darker green accent (`#1e9e56`) for contrast
-- **Theme toggle** in the sidebar — preference persisted to `localStorage`
-- **Step cards** — colored left border per step type (blue = task, amber = approval, green = notification)
-- **Graph view** — completed nodes turn green, failed red, active node pulses with animation
-- **No external CSS framework** — plain CSS custom properties throughout, full control over every pixel
+| Input | Route |
+|-------|-------|
+| amount=250, country=US, priority=High | Manager Approval → Finance Notification → end |
+| amount=30, country=US, priority=High | Manager Approval → CEO Approval → end |
+| amount=250, country=IN, priority=Low | Manager Approval → Task Rejection → end |
 
 ---
 
-## License
+## Example — Expense Reimbursement Workflow
 
-Built for the Halleyx Full Stack Engineer Challenge 2026.
+A real-world workflow to test all features. Create this workflow in the app:
+
+**Input:** `employee_name`, `amount` (number), `category` (Travel/Equipment/Medical), `department`
+
+**Steps:** Auto Validation → Manager Review → Finance Approval → Director Approval → Payment Processed → Rejected → Complete
+
+**Sample executions to try:**
+
+| Input | Expected Route |
+|-------|---------------|
+| amount=350, category=Medical | Auto Validation → Payment Processed → Complete *(auto approved)* |
+| amount=750, category=Travel | Auto Validation → Manager Review → Payment Processed → Complete |
+| amount=1500, category=Equipment | Auto Validation → Finance Approval → Payment Processed → Complete |
+| amount=75000, category=Equipment | Auto Validation → Director Approval → Rejected → Complete |
+
+> The same workflow produces different routes based on input — all controlled by rules, no code changes needed.
+
+---
+
+
