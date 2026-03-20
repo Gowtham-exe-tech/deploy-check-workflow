@@ -7,16 +7,12 @@ from database import engine
 from models import Base
 from routes import workflows, steps, rules, executions
 
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(
     title=APP_TITLE,
     version=APP_VERSION,
     description="Workflow automation engine with dynamic rule evaluation",
 )
 
-# In development: allow all origins so any localhost port works
-# In production: use specific allowed origins from config
 IS_PRODUCTION = os.getenv("DATABASE_URL", "").startswith("postgresql")
 
 app.add_middleware(
@@ -31,6 +27,17 @@ app.include_router(workflows.router)
 app.include_router(steps.router)
 app.include_router(rules.router)
 app.include_router(executions.router)
+
+
+@app.on_event("startup")
+async def startup():
+    """Create tables on startup — wrapped in try/catch so server starts even if DB is slow."""
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✓ Database tables created/verified")
+    except Exception as e:
+        print(f"⚠ Database connection warning: {e}")
+        print("Server starting anyway — DB may connect later")
 
 
 @app.get("/health")
